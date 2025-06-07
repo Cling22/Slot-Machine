@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Slots</title>
+  <style>
+    body {
+      background: radial-gradient(circle at center, #1e1e2f, #0a0a0f);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .slot-machine {
+      display: flex;
+      gap: 1rem;
+      overflow: hidden;
+      margin: 2rem 0;
+    }
+    .reel {
+      width: 80px;
+      height: 240px;
+      overflow: hidden;
+      border: 3px solid #888;
+      border-radius: 8px;
+      background: #111;
+      position: relative;
+    }
+    .symbols {
+      display: flex;
+      flex-direction: column;
+      position: absolute;
+      top: 0;
+      width: 100%;
+    }
+    .symbol {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      height: 80px;
+      width: 100%;
+      transition: transform 0.2s ease;
+    }
+    .row-highlight {
+      animation: flash 0.8s ease-in-out infinite alternate;
+    }
+
+    @keyframes flash {
+      from { background-color: rgba(255, 255, 255, 0.15); }
+      to { background-color: rgba(255, 255, 255, 0.35); transform: scale(1.1); }
+    }
+
+    button, input {
+      margin-top: 10px;
+      background-color: #facc15;
+      border: none;
+      padding: 10px 20px;
+      font-size: 1.1rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:disabled {
+      background-color: #999;
+      cursor: not-allowed;
+    }
+    .message {
+      margin-top: 1rem;
+      font-size: 1.2rem;
+      min-height: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎰 Slots</h1>
+  <p id="credits">Money: $0</p>
+  <label for="bet">Bet Amount: </label>
+  <input type="number" id="bet" min="1" value="10" />
+  <div class="slot-machine">
+    <div class="reel" id="reel0"><div class="symbols"></div></div>
+    <div class="reel" id="reel1"><div class="symbols"></div></div>
+    <div class="reel" id="reel2"><div class="symbols"></div></div>
+  </div>
+  <button id="spinButton">SPIN 🎲</button>
+  <p class="message" id="message"></p>
+
+  <!-- Upload a file named lose.mp3 in the same folder or delete this tag -->
+  <audio id="loseSound" src="lose.mp3" preload="auto"></audio>
+
+  <script>
+    const symbols = ["💎", "🍉", "💰", "🎲", "👑", "🔥"];
+    const JACKPOT_MULTIPLIER = 100;
+    const DOUBLE_MULTIPLIER = 2.5;
+    const STORAGE_KEY = "slots_credits";
+
+    // Load saved credits or start with 100
+    let credits = parseInt(localStorage.getItem(STORAGE_KEY)) || 100;
+
+    const reels = ["reel0", "reel1", "reel2"].map(id => document.querySelector(`#${id} .symbols`));
+    const creditsDisplay = document.getElementById("credits");
+    const messageDisplay = document.getElementById("message");
+    const spinButton = document.getElementById("spinButton");
+    const betInput = document.getElementById("bet");
+    const loseSound = document.getElementById("loseSound");
+
+    // Initial UI state
+    updateCredits(0);
+    toggleSpinButton();
+
+    // Sounds
+    function playWinningSound() {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(880, ctx.currentTime);
+      g.gain.setValueAtTime(0.1, ctx.currentTime);
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start();
+      o.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.3);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+      o.stop(ctx.currentTime + 0.3);
+    }
+
+    function playSpinSound() {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(400, ctx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.5);
+      g.gain.setValueAtTime(0.15, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start();
+      o.stop(ctx.currentTime + 0.5);
+    }
+
+    function updateCredits(amount) {
+      credits += amount;
+      if (credits < 0) credits = 0;
+      localStorage.setItem(STORAGE_KEY, credits);
+      creditsDisplay.textContent = `Money: $${credits}`;
+      toggleSpinButton();
+    }
+
+    function toggleSpinButton() {
+      const bet = parseInt(betInput.value);
+      spinButton.disabled = isNaN(bet) || bet <= 0 || bet > credits;
+    }
+
+    betInput.addEventListener('input', toggleSpinButton);
+
+    function generateSymbols() {
+      return Array.from({ length: 40 }, () => symbols[Math.floor(Math.random() * symbols.length)]);
+    }
+
+    function spinReel(reel, delay) {
+      return new Promise(resolve => {
+        const items = generateSymbols();
+        reel.innerHTML = "";
+        items.forEach(symbol => {
+          const div = document.createElement("div");
+          div.className = "symbol";
+          div.textContent = symbol;
+          reel.appendChild(div);
+        });
+
+        const offset = -80 * (items.length - 3);
+        reel.style.transition = "none";
+        reel.style.transform = "translateY(0px)";
+
+        setTimeout(() => {
+          reel.style.transition = "transform 5s cubic-bezier(0.25, 1, 0.5, 1)";
+          reel.style.transform = `translateY(${offset}px)`;
+          setTimeout(() => resolve(items.slice(-3)), 5000);
+        }, delay);
+      });
+    }
+
+    async function spin() {
+      const bet = parseInt(betInput.value);
+      if (credits < bet || bet <= 0) return;
+
+      updateCredits(-bet);
+      messageDisplay.textContent = "";
+      playSpinSound();
+
+      const results = await Promise.all([
+        spinReel(reels[0], 0),
+        spinReel(reels[1], 100),
+        spinReel(reels[2], 200)
+      ]);
+
+      const middleRow = results.map(col => col[1]);
+      evaluate(middleRow, bet);
+      toggleSpinButton();
+    }
+
+    function evaluate(middle, bet) {
+      const unique = new Set(middle);
+      const cells = document.querySelectorAll(".symbol");
+      cells.forEach(cell => cell.classList.remove("row-highlight"));
+
+      if (unique.size === 1) {
+        const winnings = bet * JACKPOT_MULTIPLIER;
+        updateCredits(winnings);
+        messageDisplay.textContent = `🎉 JACKPOT! +$${winnings}!`;
+        playWinningSound();
+      } else if (unique.size === 2) {
+        const reward = Math.floor(bet * DOUBLE_MULTIPLIER);
+        updateCredits(reward);
+        messageDisplay.textContent = `✨ Two matched! +$${reward}`;
+        playWinningSound();
+      } else {
+        messageDisplay.textContent = "💔 No match! Try again.";
+        loseSound.currentTime = 0;
+        loseSound.play();
+      }
+
+      reels.forEach(reel => {
+        const middleSymbol = reel.children[reel.children.length - 2];
+        if (middleSymbol) middleSymbol.classList.add("row-highlight");
+      });
+    }
+
+    spinButton.addEventListener("click", spin);
+  </script>
+</body>
+</html>
