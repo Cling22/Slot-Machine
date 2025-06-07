@@ -128,6 +128,8 @@
     const DOUBLE_MULTIPLIER = 2.5;
     const STORAGE_KEY = "slots_credits";
 
+    let spinInProgress = false; // Flag to track if spin is in progress
+
     // Load saved credits or start with 100
     let credits = parseInt(localStorage.getItem(STORAGE_KEY)) || 100;
     const initialCredits = 100; // Starting amount for reset
@@ -186,7 +188,7 @@
 
     function toggleSpinButton() {
       const bet = parseInt(betInput.value);
-      spinButton.disabled = isNaN(bet) || bet <= 0 || bet > credits;
+      spinButton.disabled = isNaN(bet) || bet <= 0 || bet > credits || spinInProgress; // Prevent spin if it's in progress
     }
 
     function toggleResetButton() {
@@ -229,10 +231,11 @@
 
     async function spin() {
       const bet = parseInt(betInput.value);
-      if (credits < bet || bet <= 0) return;
+      if (credits < bet || bet <= 0 || spinInProgress) return; // Prevent spin if it's already in progress
 
-      // Hide the reset button at the start of the spin
-      resetButton.style.display = "none";
+      // Start the spin
+      spinInProgress = true; // Set the flag to true
+      resetButton.style.display = "none"; // Hide reset button at the start
 
       updateCredits(-bet);
       messageDisplay.textContent = "";
@@ -247,6 +250,8 @@
       const middleRow = results.map(col => col[1]);
       evaluate(middleRow, bet);
       toggleSpinButton();
+
+      spinInProgress = false; // Set the flag to false once spin finishes
     }
 
     function evaluate(middle, bet) {
@@ -280,11 +285,13 @@
     }
 
     function resetGame() {
+      if (spinInProgress) return; // Prevent reset if a spin is in progress
+
       credits = initialCredits;
       localStorage.setItem(STORAGE_KEY, credits);
       updateCredits(0);
       messageDisplay.textContent = "Game Reset!";
-      resetButton.style.display = "none";  // Hide reset button after reset
+      resetButton.style.display = "none"; // Hide reset button after reset
     }
 
     spinButton.addEventListener("click", spin);
