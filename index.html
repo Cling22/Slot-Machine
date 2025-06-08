@@ -55,12 +55,10 @@
     .row-highlight {
       animation: flash 0.8s ease-in-out infinite alternate;
     }
-
     @keyframes flash {
       from { background-color: rgba(255, 255, 255, 0.15); }
       to { background-color: rgba(255, 255, 255, 0.35); transform: scale(1.1); }
     }
-
     button, input {
       margin-top: 10px;
       background-color: #facc15;
@@ -71,33 +69,27 @@
       cursor: pointer;
       transition: background-color 0.3s;
     }
-
     button:hover {
       background-color: #e4a900;
     }
-
     button:disabled {
       background-color: #999;
       cursor: not-allowed;
     }
-
     .message {
       margin-top: 1rem;
       font-size: 1.2rem;
       min-height: 1.5rem;
       color: #facc15;
     }
-
     #resetButton {
       display: none;
       background-color: #f44336;
       margin-top: 20px;
     }
-
     #resetButton:hover {
       background-color: #d32f2f;
     }
-
     @media (max-width: 600px) {
       .slot-machine {
         flex-direction: column;
@@ -119,7 +111,6 @@
   <button id="resetButton">RESET GAME</button>
   <p class="message" id="message"></p>
 
-  <!-- Upload a file named lose.mp3 in the same folder or delete this tag -->
   <audio id="loseSound" src="lose.mp3" preload="auto"></audio>
 
   <script>
@@ -128,11 +119,9 @@
     const DOUBLE_MULTIPLIER = 2.5;
     const STORAGE_KEY = "slots_credits";
 
-    let spinInProgress = false; // Flag to track if spin is in progress
-
-    // Load saved credits or start with 100
+    let spinInProgress = false;
     let credits = parseInt(localStorage.getItem(STORAGE_KEY)) || 100;
-    const initialCredits = 100; // Starting amount for reset
+    const initialCredits = 100;
 
     const reels = ["reel0", "reel1", "reel2"].map(id => document.querySelector(`#${id} .symbols`));
     const creditsDisplay = document.getElementById("credits");
@@ -142,11 +131,9 @@
     const resetButton = document.getElementById("resetButton");
     const loseSound = document.getElementById("loseSound");
 
-    // Initial UI state
     updateCredits(0);
     toggleSpinButton();
 
-    // Sounds
     function playWinningSound() {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
       const o = ctx.createOscillator();
@@ -188,11 +175,10 @@
 
     function toggleSpinButton() {
       const bet = parseInt(betInput.value);
-      spinButton.disabled = isNaN(bet) || bet <= 0 || bet > credits || spinInProgress; // Prevent spin if it's in progress
+      spinButton.disabled = isNaN(bet) || bet <= 0 || bet > credits || spinInProgress;
     }
 
     function toggleResetButton() {
-      // Show the reset button if credits are 0 after a spin
       if (credits <= 0) {
         resetButton.style.display = "block";
       } else {
@@ -231,12 +217,10 @@
 
     async function spin() {
       const bet = parseInt(betInput.value);
-      if (credits < bet || bet <= 0 || spinInProgress) return; // Prevent spin if it's already in progress
+      if (credits < bet || bet <= 0 || spinInProgress) return;
 
-      // Start the spin
-      spinInProgress = true; // Set the flag to true
-      resetButton.style.display = "none"; // Hide reset button at the start
-
+      spinInProgress = true;
+      resetButton.style.display = "none";
       updateCredits(-bet);
       messageDisplay.textContent = "";
       playSpinSound();
@@ -249,9 +233,9 @@
 
       const middleRow = results.map(col => col[1]);
       evaluate(middleRow, bet);
-      toggleSpinButton();
 
-      spinInProgress = false; // Set the flag to false once spin finishes
+      spinInProgress = false;
+      toggleSpinButton(); // ✅ FIXED: re-enable the button here
     }
 
     function evaluate(middle, bet) {
@@ -280,18 +264,17 @@
         if (middleSymbol) middleSymbol.classList.add("row-highlight");
       });
 
-      // Show the reset button if credits are 0 after the round ends
       toggleResetButton();
     }
 
     function resetGame() {
-      if (spinInProgress) return; // Prevent reset if a spin is in progress
+      if (spinInProgress) return;
 
       credits = initialCredits;
       localStorage.setItem(STORAGE_KEY, credits);
       updateCredits(0);
       messageDisplay.textContent = "Game Reset!";
-      resetButton.style.display = "none"; // Hide reset button after reset
+      resetButton.style.display = "none";
     }
 
     spinButton.addEventListener("click", spin);
