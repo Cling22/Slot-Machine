@@ -90,6 +90,13 @@
     #resetButton:hover {
       background-color: #d32f2f;
     }
+    .bet-controls {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
     @media (max-width: 600px) {
       .slot-machine {
         flex-direction: column;
@@ -102,6 +109,15 @@
   <p id="credits">Money: $0</p>
   <label for="bet">Bet Amount: </label>
   <input type="number" id="bet" min="1" value="10" />
+  
+  <!-- ✅ Bet Control Buttons -->
+  <div class="bet-controls">
+    <button id="doubleBet">2x</button>
+    <button id="halfBet">1/2</button>
+    <button id="allIn">All In</button>
+    <button id="tenPercent">10%</button>
+  </div>
+
   <div class="slot-machine">
     <div class="reel" id="reel0"><div class="symbols"></div></div>
     <div class="reel" id="reel1"><div class="symbols"></div></div>
@@ -115,8 +131,8 @@
 
   <script>
     const symbols = ["💎", "🪙", "💰", "🤑", "💳", "💵", "🍔"];
-    const JACKPOT_MULTIPLIER = 100;
-    const DOUBLE_MULTIPLIER = 2.5;
+    const JACKPOT_MULTIPLIER = 150;
+    const DOUBLE_MULTIPLIER = 2.75;
     const STORAGE_KEY = "slots_credits";
 
     let spinInProgress = false;
@@ -235,7 +251,7 @@
       evaluate(middleRow, bet);
 
       spinInProgress = false;
-      toggleSpinButton(); // ✅ FIXED: re-enable the button here
+      toggleSpinButton();
     }
 
     function evaluate(middle, bet) {
@@ -269,13 +285,38 @@
 
     function resetGame() {
       if (spinInProgress) return;
-
       credits = initialCredits;
       localStorage.setItem(STORAGE_KEY, credits);
       updateCredits(0);
       messageDisplay.textContent = "Game Reset!";
       resetButton.style.display = "none";
     }
+
+    // ✅ Bet Control Functions
+    document.getElementById("doubleBet").addEventListener("click", () => {
+      let bet = parseInt(betInput.value) || 1;
+      bet = Math.min(bet * 2, credits);
+      betInput.value = bet;
+      toggleSpinButton();
+    });
+
+    document.getElementById("halfBet").addEventListener("click", () => {
+      let bet = parseInt(betInput.value) || 1;
+      bet = Math.max(1, Math.floor(bet / 2));
+      betInput.value = bet;
+      toggleSpinButton();
+    });
+
+    document.getElementById("allIn").addEventListener("click", () => {
+      betInput.value = credits;
+      toggleSpinButton();
+    });
+
+    document.getElementById("tenPercent").addEventListener("click", () => {
+      let bet = Math.max(1, Math.floor(credits * 0.1));
+      betInput.value = bet;
+      toggleSpinButton();
+    });
 
     spinButton.addEventListener("click", spin);
     resetButton.addEventListener("click", resetGame);
