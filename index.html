@@ -150,6 +150,10 @@
     updateCredits(0);
     toggleSpinButton();
 
+    function formatNumber(num) {
+      return num.toLocaleString();
+    }
+
     function playWinningSound() {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
       const o = ctx.createOscillator();
@@ -184,7 +188,7 @@
       credits += amount;
       if (credits < 0) credits = 0;
       localStorage.setItem(STORAGE_KEY, credits);
-      creditsDisplay.textContent = `Money: $${credits}`;
+      creditsDisplay.textContent = `Money: $${formatNumber(credits)}`;
       toggleSpinButton();
       toggleResetButton();
     }
@@ -262,12 +266,12 @@
       if (unique.size === 1) {
         const winnings = bet * JACKPOT_MULTIPLIER;
         updateCredits(winnings);
-        messageDisplay.textContent = `🎉 JACKPOT! +$${winnings}!`;
+        messageDisplay.textContent = `🎉 JACKPOT! +$${formatNumber(winnings)}!`;
         playWinningSound();
       } else if (unique.size === 2) {
         const reward = Math.floor(bet * DOUBLE_MULTIPLIER);
         updateCredits(reward);
-        messageDisplay.textContent = `✨ Two matched! +$${reward}`;
+        messageDisplay.textContent = `✨ Two matched! +$${formatNumber(reward)}`;
         playWinningSound();
       } else {
         messageDisplay.textContent = "💔 No match! Try again.";
